@@ -44,15 +44,24 @@ total_meals = st.number_input("How many meals would you like to plan?", min_valu
 # Step 2: Preset or custom
 use_preset = st.radio("Use the preset list of meals?", ("Yes", "No"))
 
-planned_meals = []
+# Placeholder for suspense / messages
 placeholder = st.empty()
 
-if st.button("Generate Meal Plan"):
-    if use_preset == "No":
-        # Custom meals
-        user_meals_input = st.text_input("Enter your meals (comma separated):")
-        meal_list = [meal.strip().title() for meal in user_meals_input.split(',') if meal.strip()]
+# Store planned meals in session state to persist between reruns
+if "planned_meals" not in st.session_state:
+    st.session_state.planned_meals = []
+if "current_meal" not in st.session_state:
+    st.session_state.current_meal = None
 
+# -----------------------------
+# Custom meal mode
+# -----------------------------
+if use_preset == "No":
+    user_meals_input = st.text_input("Enter your meals (comma separated):")
+    meal_list = [meal.strip().title() for meal in user_meals_input.split(',') if meal.strip()]
+
+    if st.button("Generate Meal Plan"):
+        planned_meals = []
         if not meal_list:
             st.warning("You didn't enter any meals.")
         else:
@@ -69,22 +78,40 @@ if st.button("Generate Meal Plan"):
             else:
                 random.shuffle(meal_list)
                 planned_meals = meal_list[:total_meals]
-    else:
-        # Preset meals mode
-        while len(planned_meals) < total_meals:
-            st.write(f"Meal {len(planned_meals)+1} of {total_meals}")
-            meal = pick_meal(preset_meals, planned_meals, placeholder)
-            confirm = st.radio(f"Do you want to add '{meal}' to your meal plan?", ("Yes", "No"), key=len(planned_meals))
-            if confirm == "Yes":
-                if meal not in planned_meals:
-                    planned_meals.append(meal)
-                    st.success(f"'{meal}' added to your plan.")
-            else:
-                st.info("Trying another meal...")
 
-    # Show final plan
-    st.subheader("📅 Your Meal Plan:")
-    for i, meal in enumerate(planned_meals, start=1):
-        st.write(f"{i}. {meal}")
+            st.subheader("📅 Your Meal Plan:")
+            for i, meal in enumerate(planned_meals, start=1):
+                st.write(f"{i}. {meal}")
+            st.success("Thank you for using the Meal Selector & Planner! 🍽️")
 
-    st.write("Thank you for using the Meal Selector & Planner! 🍽️")
+# -----------------------------
+# Preset meal mode
+# -----------------------------
+else:
+    st.subheader("Plan your meals using preset list")
+    if st.session_state.current_meal is None and len(st.session_state.planned_meals) < total_meals:
+        st.session_state.current_meal = pick_meal(preset_meals, st.session_state.planned_meals, placeholder)
+
+    if st.session_state.current_meal is not None:
+        st.write(f"Meal {len(st.session_state.planned_meals)+1} of {total_meals}: {st.session_state.current_meal}")
+
+        col1, col2 = st.columns(2)
+        add_btn = col1.button("Add to Plan")
+        skip_btn = col2.button("Skip")
+
+        if add_btn:
+            st.session_state.planned_meals.append(st.session_state.current_meal)
+            st.success(f"'{st.session_state.current_meal}' added to your plan.")
+            st.session_state.current_meal = None  # pick next meal on next rerun
+        elif skip_btn:
+            st.info("Skipping this meal...")
+            st.session_state.current_meal = None  # pick next meal on next rerun
+
+    # Check if meal plan is complete
+    if len(st.session_state.planned_meals) == total_meals:
+        st.subheader("📅 Your Meal Plan:")
+        for i, meal in enumerate(st.session_state.planned_meals, start=1):
+            st.write(f"{i}. {meal}")
+        st.success("Thank you for using the Meal Selector & Planner! 🍽️")
+        # Reset session state for a new plan if needed
+        st.session_state.current_meal = None
