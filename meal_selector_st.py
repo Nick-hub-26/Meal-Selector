@@ -45,8 +45,6 @@ if "current_meal" not in st.session_state:
 if "total_meals" not in st.session_state:
     st.session_state.total_meals = 0
 
-placeholder = st.empty()
-
 # -----------------------------
 # App Title
 # -----------------------------
@@ -102,9 +100,12 @@ elif st.session_state.step == "picking":
 # -----------------------------
     else:
         if len(st.session_state.planned_meals) < st.session_state.total_meals:
+            # Create a placeholder for suspense messages under the current meal
+            meal_placeholder = st.empty()
+
             # pick a meal if current is None
             if st.session_state.current_meal is None:
-                st.session_state.current_meal = pick_meal(preset_meals, st.session_state.planned_meals, placeholder)
+                st.session_state.current_meal = pick_meal(preset_meals, st.session_state.planned_meals, meal_placeholder)
 
             st.write(f"Meal {len(st.session_state.planned_meals)+1} of {st.session_state.total_meals}: {st.session_state.current_meal}")
 
@@ -115,10 +116,10 @@ elif st.session_state.step == "picking":
             if add_btn:
                 st.session_state.planned_meals.append(st.session_state.current_meal)
                 st.success(f"'{st.session_state.current_meal}' added to your plan.")
-                st.session_state.current_meal = None  # pick next on next rerun
+                st.session_state.current_meal = None  # pick next meal on next rerun
             elif skip_btn:
                 st.info("Skipping this meal...")
-                st.session_state.current_meal = None  # pick next on next rerun
+                st.session_state.current_meal = None  # pick next meal on next rerun
 
         else:
             # finished
