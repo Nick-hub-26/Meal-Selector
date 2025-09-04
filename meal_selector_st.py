@@ -44,6 +44,8 @@ if "current_meal" not in st.session_state:
     st.session_state.current_meal = None
 if "total_meals" not in st.session_state:
     st.session_state.total_meals = 0
+if "use_preset" not in st.session_state:
+    st.session_state.use_preset = True
 
 # -----------------------------
 # App Title
@@ -54,12 +56,13 @@ st.title("🍴 Meal Selector & Planner 🍴")
 # Step 1: Get number of meals and preset/custom choice
 # -----------------------------
 if st.session_state.step == "start":
-    st.session_state.total_meals = st.number_input("How many meals would you like to plan?", min_value=1, step=1)
-    use_preset = st.radio("Use the preset list of meals?", ("Yes", "No"))
+    total_meals_input = st.number_input("How many meals would you like to plan?", min_value=1, step=1)
+    use_preset_input = st.radio("Use the preset list of meals?", ("Yes", "No"))
 
     if st.button("Start Planning"):
         st.session_state.step = "picking"
-        st.session_state.use_preset = use_preset
+        st.session_state.use_preset = (use_preset_input == "Yes")
+        st.session_state.total_meals = total_meals_input
         st.session_state.planned_meals = []
         st.session_state.current_meal = None
 
@@ -67,7 +70,7 @@ if st.session_state.step == "start":
 # Step 2: Custom meals
 # -----------------------------
 elif st.session_state.step == "picking":
-    if st.session_state.use_preset == "No":
+    if not st.session_state.use_preset:
         user_meals_input = st.text_input("Enter your meals (comma separated):")
         meal_list = [meal.strip().title() for meal in user_meals_input.split(',') if meal.strip()]
 
@@ -75,6 +78,7 @@ elif st.session_state.step == "picking":
             if not meal_list:
                 st.warning("You didn't enter any meals.")
             else:
+                # Handle fewer meals than required
                 if len(meal_list) < st.session_state.total_meals:
                     st.warning("Fewer meals than required; some meals may repeat.")
                     available = meal_list[:]
@@ -100,7 +104,7 @@ elif st.session_state.step == "picking":
 # -----------------------------
     else:
         if len(st.session_state.planned_meals) < st.session_state.total_meals:
-            # Create a placeholder for suspense messages under the current meal
+            # Placeholder for suspense messages under the current meal
             meal_placeholder = st.empty()
 
             # pick a meal if current is None
